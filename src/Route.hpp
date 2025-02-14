@@ -21,11 +21,10 @@ struct RoutePoint {
 
 struct Transfer {
     uint32_t duration;
-    
+
     RoutePoint station1;
     RoutePoint station2;
 
-    std::string settlement;
     std::string next_transport_type;
 };
 
@@ -45,6 +44,20 @@ class Route {
 public:
     bool BuildFromJson(const json& segment);
 
+    const std::string& GetDepartureTime() const;
+    const std::string& GetArrivalTime() const;
+
+    bool HasTransfers() const;
+    size_t GetTransfersAmount() const;
+
+    const std::vector<Thread>& GetThreads() const;
+    const std::vector<Transfer>& GetTransfers() const;
+
+    const RoutePoint& GetStartPoint() const;
+    const RoutePoint& GetEndPoint() const;
+
+    static std::expected<RoutePoint, Error> ParseRoutePoint(const json& obj);
+
 private:
     std::vector<Thread> threads_;
     std::vector<Transfer> transfers_;
@@ -57,10 +70,6 @@ private:
 
     uint32_t duration_;
 
-    bool has_transfers_ = false;
-
-    std::expected<RoutePoint, Error> ParseRoutePoint(const json& obj);
-
     bool AddThread(const json& segment, const RoutePoint& start, const RoutePoint& end);
     bool AddTransfer(const json& transfer_obj);
 
@@ -69,4 +78,3 @@ private:
 };
     
 } // namespace WayHome
-

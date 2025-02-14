@@ -1,11 +1,16 @@
 #include <iostream>
 #include <vector>
 #include <argparser/ArgParser.hpp>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 #include "ApiHandler.hpp"
+#include "RoutesHandler.hpp"
 
 int main(int argc, char** argv) {
-    ArgumentParser::ArgParser argparser{"WayHome", "A tool for finding routes from city A to city B. "
+    setlocale(LC_ALL, "Russian");
+    
+    ArgumentParser::ArgParser argparser{"WayHome", "A util for finding routes from city A to city B. "
         "Uses Yandex Schedules API (http://rasp.yandex.ru/)"};
 
     argparser.AddArgument<std::string>("apikey", "Yandex Schedules API key");
@@ -68,7 +73,34 @@ int main(int argc, char** argv) {
     api.SetMaxTransfers(*argparser.GetValue<uint32_t>("transfers"));
     api.SetRoutesLimit(*argparser.GetValue<uint32_t>("limit"));
 
+    if (!api.AreParametersOk()) {
+        std::cerr << "An error occured: invalid parameter values" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    std::expected<json, WayHome::Error> request = api.MakeRequest();
     
+    if (!request.has_value()) {
+        std::cerr << "An error occured: " << request.error().message << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    WayHome::RoutesHandler routes_handler;
+    
+    if (!routes_handler.BuildFromJson(request.value())) {
+        std::cerr << "An error occured: unable to parse routes from JSON" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    std::cout << "ROUTES (" << routes_handler.GetRoutes().size() << ")\n";
+
+    for (const WayHome::Route& route : routes_handler.GetRoutes()) {
+        const WayHome::RoutePoint& start_point = route.GetStartPoint();
+        const WayHome::RoutePoint& end_point = route.GetEndPoint();
+
+        std::cout << start_point.title << " - " << end_point.title << std::endl;
+        std::cout << '\t' << route.GetDepartureTime() << " - " << route.GetArrivalTime() << std::endl;
+    }
 
     return EXIT_SUCCESS;
 }

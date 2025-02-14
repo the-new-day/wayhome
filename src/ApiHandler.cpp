@@ -2,6 +2,8 @@
 
 #include <cpr/cpr.h>
 
+#include <iostream> // TODO: remove
+
 namespace WayHome {
 
 std::expected<json, Error> ApiHandler::MakeRequest() {
@@ -16,14 +18,16 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
             {"from", GetThreadPointCode(from_).value()},
             {"to", GetThreadPointCode(to_).value()},
             {"limit", std::to_string(routes_limit_)},
-            {"transfers", (max_transfers_ == 0 ? "false" : "true")}
+            {"transfers", (max_transfers_ == 0 ? "false" : "true")},
+            {"date", date_},
+            {"format", "json"}
         }
     );
 
     if (r.status_code >= 400 && r.status_code < 500) {
-        return std::unexpected{Error{r.error.message, ErrorType::kApiError}};
+        return std::unexpected{Error{"API error", ErrorType::kApiError}};
     } else if (r.status_code != 200) {
-        return std::unexpected{Error{r.error.message, ErrorType::kNetworkError}};
+        return std::unexpected{Error{"Network error", ErrorType::kNetworkError}};
     }
 
     json response = json::parse(r.text);

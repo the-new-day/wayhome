@@ -3,23 +3,20 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#include <iostream> // TODO: remove
+
 namespace WayHome {
 
 bool Route::BuildFromJson(const json& segment) {
-    if (!segment.contains("has_transfers")) {
-        return false;
-    }
-
-    if (segment.at("has_transfers")) {
+    if (segment.contains("has_transfers") && segment["has_transfers"]) {
         return BuildWithTransfers(segment);
     }
-
+    
     return BuildWithoutTransfers(segment);
 }
 
 std::expected<RoutePoint, Error> Route::ParseRoutePoint(const json& obj) {
     if (!obj.contains("code") 
-    || !obj.contains("station_type")
     || !obj.contains("title")
     || !obj.contains("type")) {
         return std::unexpected{Error{"Invalid JSON object", ErrorType::kDataError}};
@@ -27,15 +24,18 @@ std::expected<RoutePoint, Error> Route::ParseRoutePoint(const json& obj) {
 
     RoutePoint point;
 
+    if (obj.contains("station_type")) {
+        point.station_type = obj["station_type"];
+    }
+
     point.code = obj["code"];
-    point.station_type = obj["station_type"];
     point.title = obj["title"];
     point.type = obj["type"];
 
     return point;
 }
 
-bool Route::AddThread(const json &segment, const RoutePoint& start, const RoutePoint& end) {
+bool Route::AddThread(const json& segment, const RoutePoint& start, const RoutePoint& end) {
     if (!segment.contains("arrival") || !segment.contains("departure")) {
         return false;
     }
@@ -54,17 +54,20 @@ bool Route::AddThread(const json &segment, const RoutePoint& start, const RouteP
     thread.arrival_time = segment["arrival"];
     thread.departure_time = segment["departure"];
 
-    thread.transport_type = segment["transport_type"];
+    thread.transport_type = segment_thread["transport_type"];
     
-    if (segment_thread.contains("vehicle")) {
+    if (segment_thread.contains("vehicle") && !segment_thread["vehicle"].is_null()) {
         thread.vehicle = segment_thread["vehicle"];
     }
     
-    if (segment_thread.contains("carrier") && segment_thread["carrier"].contains("title")) {
+    if (segment_thread.contains("carrier") 
+    && segment_thread["carrier"].contains("title") 
+    && !segment_thread["carrier"]["title"].is_null()) {
         thread.carrier_name = segment_thread["carrier"]["title"];
     }
     
-    if (segment_thread.contains("number")) {
+    if (segment_thread.contains("number")
+    && segment_thread["number"].is_null()) {
         thread.number = segment_thread["number"];
     }
 
@@ -100,7 +103,6 @@ bool Route::BuildWithoutTransfers(const json& segment) {
     start_point_ = start_point_parse.value();
     end_point_ = end_point_parse.value();
 
-    has_transfers_ = false;
     departure_time_ = segment["departure"];
     arrival_time_ = segment["arrival"];
     duration_ = segment["duration"];
@@ -130,12 +132,18 @@ bool Route::BuildWithTransfers(const json& segment) {
 
     auto details_obj = segment["details"];
 
+    uint32_t total_duration = 0;
+
     for (const auto& detail_obj : details_obj) {
         if (detail_obj.contains("is_transfer") && detail_obj["is_transfer"]) {
             if (!AddTransfer(detail_obj)) {
                 return false;
             }
-
+            
+            if (detail_obj.contains("duration") && detail_obj["duration"].is_number_integer()) {
+                total_duration += static_cast<uint32_t>(detail_obj["duration"]);
+            }
+            
             continue;
         }
         
@@ -165,7 +173,7 @@ bool Route::BuildWithTransfers(const json& segment) {
 
     departure_time_ = segment["departure"];
     arrival_time_ = segment["arrival"];
-    duration_ = segment["duration"];
+    duration_ = total_duration;
 
     return true;
 }
@@ -181,7 +189,7 @@ bool Route::AddTransfer(const json& transfer_obj) {
 
     auto transfer_point_obj = transfer_obj["transfer_point"];
 
-    if (!transfer_point_obj.contains("settlement")) {
+    if (!transfer_obj.contains("transfer_from") || !transfer_obj.contains("transfer_to")) {
         return false;
     }
 
@@ -207,7 +215,6 @@ bool Route::AddTransfer(const json& transfer_obj) {
     Transfer transfer;
 
     transfer.duration = transfer_obj["duration"];
-    transfer.settlement = transfer_obj["settlement"];
     transfer.next_transport_type = transfer_to_obj["transport_type"];
 
     transfer.station1 = {
@@ -225,7 +232,39 @@ bool Route::AddTransfer(const json& transfer_obj) {
     };
 
     transfers_.push_back(std::move(transfer));
-    return false;
+    return true;
+}
+
+const std::string& Route::GetArrivalTime() const {
+    return arrival_time_;
+}
+
+const std::string& Route::GetDepartureTime() const {
+    return departure_time_;
+}
+
+bool Route::HasTransfers() const {
+    return !transfers_.empty();
+}
+
+size_t Route::GetTransfersAmount() const {
+    return transfers_.size();
+}
+
+const std::vector<Thread>& Route::GetThreads() const {
+    return threads_;
+}
+
+const std::vector<Transfer>& Route::GetTransfers() const {
+    return transfers_;
+}
+
+const RoutePoint& Route::GetStartPoint() const {
+    return start_point_;
+}
+
+const RoutePoint& Route::GetEndPoint() const {
+    return start_point_;
 }
 
 } // namespace WayHome
