@@ -1,5 +1,7 @@
-add_executable(${PROJECT_NAME} main.cpp
-    WayHome.cpp)
+add_executable(${PROJECT_NAME} 
+    main.cpp
+    Route.cpp
+    ApiHandler.cpp)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libs)
 
