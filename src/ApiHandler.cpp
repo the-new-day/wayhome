@@ -5,13 +5,11 @@
 #include <string_view>
 #include <algorithm>
 
-#include <fstream>
-
 namespace WayHome {
 
 std::expected<json, Error> ApiHandler::MakeRequest() {
-    if (!AreParametersOk()) {
-        return std::unexpected{Error{"Invalid parameters", ErrorType::kDataError}};
+    if (!ValidateParameters()) {
+        return std::unexpected{Error{"Invalid parameters", ErrorType::kParametersError}};
     }
 
     cpr::Response r = cpr::Get(
@@ -29,27 +27,22 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
     );
 
     if (r.status_code >= 300 && r.status_code < 400 || r.status_code >= 500) {
-        return std::unexpected{Error{"API error", ErrorType::kApiError}};
+        error_ = {"API error: " + r.error.message, ErrorType::kApiError};
+        return std::unexpected{error_};
     } else if (r.status_code >= 400 && r.status_code < 500) {
-        return std::unexpected{Error{"Parameters error", ErrorType::kDataError}};
+        error_ = {"Parameters error", ErrorType::kParametersError};
+        return std::unexpected{error_};
     } else if (r.status_code != 200) {
-        return std::unexpected{Error{"Network error", ErrorType::kNetworkError}};
+        error_ = {"Network error", ErrorType::kNetworkError};
+        return std::unexpected{error_};
     }
 
-    json response = json::parse(r.text);
-    
-    if (response.contains("error")) {
-        return std::unexpected{Error{
-            "API Error: " + response["error"]["text"].template get<std::string>(), 
-            ErrorType::kApiError
-        }};
-    }
-
-    return response;
+    return json::parse(r.text);
 }
 
-bool ApiHandler::AreParametersOk() const {
+bool ApiHandler::ValidateParameters() {
     if (!kAllowedTransportTypes.contains(transport_type_)) {
+        error_ = {"Invalid transport type", ErrorType::kParametersError};
         return false;
     }
 
@@ -57,6 +50,7 @@ bool ApiHandler::AreParametersOk() const {
 
     // YYYY-MM-DD
     if (date.size() != 10 || date[4] != '-' || date[7] != '-') {
+        error_ = {"Invalid date format, must be YYYY-MM-DD", ErrorType::kParametersError};
         return false;
     }
 
@@ -69,10 +63,12 @@ bool ApiHandler::AreParametersOk() const {
     if (!std::all_of(year.begin(), year.end(), check_if_digit)
     || !std::all_of(month.begin(), month.end(), check_if_digit)
     || !std::all_of(day.begin(), day.end(), check_if_digit)) {
+        error_ = {"Invalid date format, must be YYYY-MM-DD", ErrorType::kParametersError};
         return false;
     }
 
     if (month > "12" || month < "01" || day < "01" || day > "31" || year < "2025") {
+        error_ = {"Invalid date", ErrorType::kParametersError};
         return false;
     }
 
@@ -81,6 +77,10 @@ bool ApiHandler::AreParametersOk() const {
 
 std::optional<std::string> ApiHandler::GetThreadPointCode(const std::string& point) const {
     return point; // TODO:
+}
+
+const Error& ApiHandler::GetError() const {
+    return error_;
 }
 
 void ApiHandler::SetDate(std::string date) {

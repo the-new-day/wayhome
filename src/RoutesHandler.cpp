@@ -6,24 +6,28 @@ bool RoutesHandler::BuildFromJson(const json& response_obj) {
     Clear();
     
     if (!response_obj.contains("search")) {
+        error_ = {"Invalid JSON: no \"search\" in response", ErrorType::kDataError};
         return false;
     }
 
     auto search_obj = response_obj["search"];
 
     if (!search_obj.contains("from") || !search_obj.contains("to") || !search_obj.contains("date")) {
+        error_ = {"Invalid JSON: not enough info in \"search\"", ErrorType::kDataError};
         return false;
     }
 
     std::expected<RoutePoint, Error> from_parse_result = Route::ParseRoutePoint(search_obj["from"]);
 
     if (!from_parse_result.has_value()) {
+        error_ = from_parse_result.error();
         return false;
     }
 
     std::expected<RoutePoint, Error> to_parse_result = Route::ParseRoutePoint(search_obj["to"]);
 
     if (!to_parse_result.has_value()) {
+        error_ = to_parse_result.error();
         return false;
     }
 
@@ -49,6 +53,7 @@ bool RoutesHandler::AddRoute(const json& segment) {
     Route route;
 
     if (!route.BuildFromJson(segment)) {
+        error_ = route.GetError();
         return false;
     }
 
@@ -185,6 +190,10 @@ void RoutesHandler::Clear() {
     end_point_ = {};
     departure_date_ = {};
     routes_.clear();
+}
+
+const Error& RoutesHandler::GetError() const {
+    return error_;
 }
 
 } // namespace WayHome

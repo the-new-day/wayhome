@@ -23,12 +23,16 @@ public:
     
     void Clear();
 
+    const Error& GetError() const;
+
 private:
     RoutePoint start_point_;
     RoutePoint end_point_;
     std::string departure_date_;
 
     std::vector<Route> routes_;
+
+    Error error_;
 
     bool AddRoute(const json& segment);
 };

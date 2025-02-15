@@ -26,12 +26,14 @@ const std::set<std::string> kAllowedTransportTypes = {
 enum class ErrorType {
     kNetworkError,
     kApiError,
-    kDataError
+    kDataError,
+    kParametersError,
+    kOk
 };
 
 struct Error {
     std::string message;
-    ErrorType type;
+    ErrorType type = ErrorType::kOk;
 };
 
 class ApiHandler {
@@ -54,12 +56,16 @@ public:
     void SetRoutesLimit(uint32_t limit);
     void SetMaxTransfers(uint32_t max_transfers);
 
-    bool AreParametersOk() const;
+    bool ValidateParameters();
+
+    const Error& GetError() const;
 
 private:
     const std::string apikey_;
     const std::string from_;
     const std::string to_;
+
+    Error error_;
 
     std::string date_;
     std::string transport_type_;

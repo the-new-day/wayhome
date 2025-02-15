@@ -63,6 +63,8 @@ public:
 
     static std::expected<RoutePoint, Error> ParseRoutePoint(const json& obj);
 
+    const Error& GetError() const;
+
 private:
     std::vector<Thread> threads_;
     std::vector<Transfer> transfers_;
@@ -74,6 +76,8 @@ private:
     std::string arrival_time_;
 
     uint32_t duration_;
+
+    Error error_;
 
     bool AddThread(const json& segment, const RoutePoint& start, const RoutePoint& end);
     bool AddTransfer(const json& transfer_obj);

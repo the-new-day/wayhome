@@ -74,22 +74,22 @@ int main(int argc, char** argv) {
     api.SetMaxTransfers(*argparser.GetValue<uint32_t>("transfers"));
     api.SetRoutesLimit(*argparser.GetValue<uint32_t>("limit"));
 
-    if (!api.AreParametersOk()) {
-        std::cerr << "An error occured: invalid parameter values" << std::endl;
+    if (!api.ValidateParameters()) {
+        std::cerr << "An error occured: " << api.GetError().message << std::endl;
         return EXIT_FAILURE;
     }
 
     std::expected<json, WayHome::Error> request = api.MakeRequest();
     
     if (!request.has_value()) {
-        std::cerr << "An error occured: " << request.error().message << std::endl;
+        std::cerr << "An error occured: " << api.GetError().message << std::endl;
         return EXIT_FAILURE;
     }
 
     WayHome::RoutesHandler routes_handler;
     
     if (!routes_handler.BuildFromJson(request.value())) {
-        std::cerr << "An error occured: unable to parse routes from JSON" << std::endl;
+        std::cerr << "An error occured: " << routes_handler.GetError().message << std::endl;
         return EXIT_FAILURE;
     }
 
