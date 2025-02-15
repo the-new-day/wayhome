@@ -22,6 +22,7 @@ struct RoutePoint {
 struct Transfer {
     uint32_t duration;
 
+    RoutePoint transfer_point;
     RoutePoint station1;
     RoutePoint station2;
 
@@ -38,6 +39,8 @@ struct Thread {
     std::string carrier_name;
     std::string departure_time;
     std::string arrival_time;
+    
+    uint32_t duration;
 };
 
 class Route {
@@ -55,6 +58,8 @@ public:
 
     const RoutePoint& GetStartPoint() const;
     const RoutePoint& GetEndPoint() const;
+
+    uint32_t GetDuration() const;
 
     static std::expected<RoutePoint, Error> ParseRoutePoint(const json& obj);
 

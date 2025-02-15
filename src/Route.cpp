@@ -67,8 +67,12 @@ bool Route::AddThread(const json& segment, const RoutePoint& start, const RouteP
     }
     
     if (segment_thread.contains("number")
-    && segment_thread["number"].is_null()) {
+    && !segment_thread["number"].is_null()) {
         thread.number = segment_thread["number"];
+    }
+
+    if (segment.contains("duration")) {
+        thread.duration = segment["duration"];
     }
 
     threads_.push_back(std::move(thread));
@@ -96,7 +100,7 @@ bool Route::BuildWithoutTransfers(const json& segment) {
         return false;
     }
 
-    if (!AddThread(segment, start_point_, end_point_)) {
+    if (!AddThread(segment, start_point_parse.value(), end_point_parse.value())) {
         return false;
     }
 
@@ -135,13 +139,13 @@ bool Route::BuildWithTransfers(const json& segment) {
     uint32_t total_duration = 0;
 
     for (const auto& detail_obj : details_obj) {
+        if (detail_obj.contains("duration") && detail_obj["duration"].is_number()) {
+            total_duration += static_cast<uint32_t>(detail_obj["duration"]);
+        }
+
         if (detail_obj.contains("is_transfer") && detail_obj["is_transfer"]) {
             if (!AddTransfer(detail_obj)) {
                 return false;
-            }
-            
-            if (detail_obj.contains("duration") && detail_obj["duration"].is_number_integer()) {
-                total_duration += static_cast<uint32_t>(detail_obj["duration"]);
             }
             
             continue;
@@ -212,10 +216,17 @@ bool Route::AddTransfer(const json& transfer_obj) {
         return false;
     }
 
+    auto transfer_point_parse = ParseRoutePoint(transfer_point_obj);
+
+    if (!transfer_point_parse.has_value()) {
+        return false;
+    }
+
     Transfer transfer;
 
     transfer.duration = transfer_obj["duration"];
     transfer.next_transport_type = transfer_to_obj["transport_type"];
+    transfer.transfer_point = transfer_point_parse.value();
 
     transfer.station1 = {
         transfer_from_obj["code"],
@@ -264,7 +275,11 @@ const RoutePoint& Route::GetStartPoint() const {
 }
 
 const RoutePoint& Route::GetEndPoint() const {
-    return start_point_;
+    return end_point_;
+}
+
+uint32_t Route::GetDuration() const {
+    return duration_;
 }
 
 } // namespace WayHome

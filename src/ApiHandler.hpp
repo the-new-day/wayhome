@@ -36,12 +36,12 @@ struct Error {
 
 class ApiHandler {
 public:
-    explicit ApiHandler(std::string&& apikey, std::string&& from, std::string&& to) 
+    explicit ApiHandler(std::string&& apikey, std::string&& from, std::string&& to)
         : apikey_(std::move(apikey))
         , from_(std::move(from))
         , to_(std::move(to)) {}
 
-    explicit ApiHandler(const std::string& apikey, const std::string& from, const std::string& to) 
+    explicit ApiHandler(const std::string& apikey, const std::string& from, const std::string& to)
         : apikey_(apikey)
         , from_(from)
         , to_(to) {}

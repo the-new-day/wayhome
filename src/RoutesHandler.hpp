@@ -16,6 +16,9 @@ public:
     bool BuildFromJson(const json& response_obj);
     const std::vector<Route>& GetRoutes() const;
 
+    const RoutePoint& GetStartPoint() const;
+    const RoutePoint& GetEndPoint() const;
+
     void DumpRoutesToJson(std::ostream& stream) const;
     
     void Clear();

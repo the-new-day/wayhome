@@ -2,6 +2,9 @@
 
 #include <cpr/cpr.h>
 
+#include <string_view>
+#include <algorithm>
+
 #include <iostream> // TODO: remove
 
 namespace WayHome {
@@ -24,8 +27,10 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
         }
     );
 
-    if (r.status_code >= 400 && r.status_code < 500) {
+    if (r.status_code >= 300 && r.status_code < 400 || r.status_code >= 500) {
         return std::unexpected{Error{"API error", ErrorType::kApiError}};
+    } else if (r.status_code >= 400 && r.status_code < 500) {
+        return std::unexpected{Error{"Parameters error", ErrorType::kDataError}};
     } else if (r.status_code != 200) {
         return std::unexpected{Error{"Network error", ErrorType::kNetworkError}};
     }
@@ -43,11 +48,32 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
 }
 
 bool ApiHandler::AreParametersOk() const {
+    return true; // TODO:
+
+    if (!kAllowedTransportTypes.contains(transport_type_)) {
+        return false;
+    }
+
+    std::string_view date{date_};
+
+    // YYYY-MM-DD
+    if (date.size() != 10 || date[4] != '-' || date[7] != '-') {
+        return false;
+    }
+
+    std::string_view year = date.substr(0, 4);
+    std::string_view month = date.substr(5, 2);
+    std::string_view day = date.substr(8, 2);
+
+    if (!std::all_of(year.begin(), year.end(), [](char ch) { return std::isdigit(ch); })) {
+        return false;
+    }
+
     return true;
 }
 
 std::optional<std::string> ApiHandler::GetThreadPointCode(const std::string& point) const {
-    return point;
+    return point; // TODO:
 }
 
 void ApiHandler::SetDate(std::string date) {
