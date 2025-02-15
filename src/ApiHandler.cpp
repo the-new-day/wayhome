@@ -16,12 +16,12 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
         cpr::Url{kApiUrl},
         cpr::Parameters{
             {"apikey", apikey_},
-            {"from", GetThreadPointCode(from_).value()},
-            {"to", GetThreadPointCode(to_).value()},
-            {"limit", std::to_string(routes_limit_)},
-            {"transfers", (max_transfers_ == 0 ? "false" : "true")},
-            {"transport_types", transport_type_},
-            {"date", date_},
+            {"from", GetThreadPointCode(parameters_.from).value()},
+            {"to", GetThreadPointCode(parameters_.to).value()},
+            {"limit", std::to_string(parameters_.limit)},
+            {"transfers", (parameters_.max_transfers == 0 ? "false" : "true")},
+            {"transport_types", parameters_.transport_type},
+            {"date", parameters_.date},
             {"format", "json"}
         }
     );
@@ -30,7 +30,7 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
         error_ = {"API error: " + r.error.message, ErrorType::kApiError};
         return std::unexpected{error_};
     } else if (r.status_code >= 400 && r.status_code < 500) {
-        error_ = {"Parameters error", ErrorType::kParametersError};
+        error_ = {"Parameters error in request: " + r.url.str(), ErrorType::kParametersError};
         return std::unexpected{error_};
     } else if (r.status_code != 200) {
         error_ = {"Network error", ErrorType::kNetworkError};
@@ -41,16 +41,16 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
 }
 
 bool ApiHandler::ValidateParameters() {
-    if (!kAllowedTransportTypes.contains(transport_type_)) {
+    if (!kAllowedTransportTypes.contains(parameters_.transport_type)) {
         error_ = {"Invalid transport type", ErrorType::kParametersError};
         return false;
     }
 
-    std::string_view date{date_};
+    std::string_view date{parameters_.date};
 
     // YYYY-MM-DD
     if (date.size() != 10 || date[4] != '-' || date[7] != '-') {
-        error_ = {"Invalid date format, must be YYYY-MM-DD", ErrorType::kParametersError};
+        error_ = {"Invalid date format, must be YYYY-MM-DD (-) " + parameters_.date, ErrorType::kParametersError};
         return false;
     }
 
@@ -81,22 +81,6 @@ std::optional<std::string> ApiHandler::GetThreadPointCode(const std::string& poi
 
 const Error& ApiHandler::GetError() const {
     return error_;
-}
-
-void ApiHandler::SetDate(std::string date) {
-    date_ = std::move(date);
-}
-
-void ApiHandler::SetTransportType(std::string type) {
-    transport_type_ = std::move(type);
-}
-
-void ApiHandler::SetRoutesLimit(uint32_t limit) {
-    routes_limit_ = limit;
-}
-
-void ApiHandler::SetMaxTransfers(uint32_t max_transfers) {
-    max_transfers_ = max_transfers;
 }
 
 } // namespace WayHome

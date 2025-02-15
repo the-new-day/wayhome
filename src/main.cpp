@@ -1,5 +1,4 @@
-#include "ApiHandler.hpp"
-#include "RoutesHandler.hpp"
+#include "WayHome.hpp"
 
 #include <argparser/ArgParser.hpp>
 
@@ -8,27 +7,37 @@
 #include <fstream>
 
 int main(int argc, char** argv) {
+    WayHome::ApiRouteParameters params;
+
     ArgumentParser::ArgParser argparser{"WayHome", "A util for finding routes from city A to city B. "
         "Uses Yandex Schedules API (http://rasp.yandex.ru/)"};
 
-    argparser.AddArgument<std::string>("apikey", "Yandex Schedules API key");
+    argparser.AddArgument<std::string>("from", "Departure point: Yandex Schedules code")
+        .StoreValue(params.from);
 
-    argparser.AddArgument<std::string>("from", "Departure point: Yandex Schedules code");
-    argparser.AddArgument<std::string>("to", "Arrival point: Yandex Schedules code");
-    argparser.AddArgument<std::string>("date", "Date of departure in \"YYYY-MM-DD\" format");
+    argparser.AddArgument<std::string>("to", "Arrival point: Yandex Schedules code")
+        .StoreValue(params.to);
+
+    argparser.AddArgument<std::string>("date", "Date of departure in \"YYYY-MM-DD\" format")
+        .StoreValue(params.date);
 
     argparser.AddArgument<uint32_t>("limit", "Maximum number of routes in the response")
-        .Default(10);
+        .Default(10)
+        .StoreValue(params.limit);
 
     argparser.AddArgument<uint32_t>("transfers", "Maximum number of transfers")
-        .Default(1);
+        .Default(1)
+        .StoreValue(params.max_transfers);
     
     argparser.AddArgument<std::string>("transport", "Transport type")
         .Default("")
+        .StoreValue(params.transport_type)
         .SetDefaultValueString("all");
 
     argparser.AddArgument<std::string>("file", "Name of the file routes will be stored to")
-        .Default("wayhome_routes.json");
+        .Default(WayHome::kResultFilename);
+
+    argparser.AddFlag("reload-cache", "Force to make a new call to API even if suitable routes are cached");
         
     argparser.AddHelp("help", "Show help and exit");
 
@@ -62,44 +71,14 @@ int main(int argc, char** argv) {
         return EXIT_SUCCESS;
     }
 
-    WayHome::ApiHandler api{
-        *argparser.GetValue<std::string>("apikey"),
-        *argparser.GetValue<std::string>("from"),
-        *argparser.GetValue<std::string>("to")
-    };
+    WayHome::WayHome wayhome{params};
+    wayhome.CalculateRoutes();
+    wayhome.DumpRoutesToJson(*argparser.GetValue<std::string>("file"));
 
-    api.SetDate(*argparser.GetValue<std::string>("date"));
-    api.SetTransportType(*argparser.GetValue<std::string>("transport"));
-
-    api.SetMaxTransfers(*argparser.GetValue<uint32_t>("transfers"));
-    api.SetRoutesLimit(*argparser.GetValue<uint32_t>("limit"));
-
-    if (!api.ValidateParameters()) {
-        std::cerr << "An error occured: " << api.GetError().message << std::endl;
+    if (wayhome.HasError()) {
+        std::cerr << "An error occured: " << wayhome.GetError().message << std::endl;
         return EXIT_FAILURE;
     }
-
-    std::expected<json, WayHome::Error> request = api.MakeRequest();
     
-    if (!request.has_value()) {
-        std::cerr << "An error occured: " << api.GetError().message << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    WayHome::RoutesHandler routes_handler;
-    
-    if (!routes_handler.BuildFromJson(request.value())) {
-        std::cerr << "An error occured: " << routes_handler.GetError().message << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    std::ofstream f(*argparser.GetValue<std::string>("file"));
-
-    if (!f.good()) {
-        std::cerr << "An error occured: unable to open the file" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    routes_handler.DumpRoutesToJson(f, *argparser.GetValue<uint32_t>("transfers"));
     return EXIT_SUCCESS;
 }

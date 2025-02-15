@@ -24,6 +24,7 @@ public:
     void Clear();
 
     const Error& GetError() const;
+    bool HasError() const;
 
 private:
     RoutePoint start_point_;

@@ -64,6 +64,7 @@ public:
     static std::expected<RoutePoint, Error> ParseRoutePoint(const json& obj);
 
     const Error& GetError() const;
+    bool HasError() const;
 
 private:
     std::vector<Thread> threads_;

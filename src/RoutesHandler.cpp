@@ -61,18 +61,6 @@ bool RoutesHandler::AddRoute(const json& segment) {
     return true;
 }
 
-const std::vector<Route>& RoutesHandler::GetRoutes() const {
-    return routes_;
-}
-
-const RoutePoint& RoutesHandler::GetStartPoint() const {
-    return start_point_;
-}
-
-const RoutePoint& RoutesHandler::GetEndPoint() const {
-    return end_point_;
-}
-
 void RoutesHandler::DumpRoutesToJson(std::ostream& stream, uint32_t max_transfers) const {
     json obj;
     obj["from"] = {
@@ -194,6 +182,22 @@ void RoutesHandler::Clear() {
 
 const Error& RoutesHandler::GetError() const {
     return error_;
+}
+
+bool RoutesHandler::HasError() const {
+    return error_.type != ErrorType::kOk;
+}
+
+const std::vector<Route>& RoutesHandler::GetRoutes() const {
+    return routes_;
+}
+
+const RoutePoint& RoutesHandler::GetStartPoint() const {
+    return start_point_;
+}
+
+const RoutePoint& RoutesHandler::GetEndPoint() const {
+    return end_point_;
 }
 
 } // namespace WayHome

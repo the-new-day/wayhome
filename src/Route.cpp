@@ -288,4 +288,8 @@ const Error& Route::GetError() const {
     return error_;
 }
 
+bool Route::HasError() const {
+    return error_.type != ErrorType::kOk;
+}
+
 } // namespace WayHome

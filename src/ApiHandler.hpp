@@ -11,7 +11,16 @@ using json = nlohmann::json;
 
 namespace WayHome {
 
-const auto kApiUrl = "https://api.rasp.yandex.net/v3.0/search/";
+const std::string kApiUrl{"https://api.rasp.yandex.net/v3.0/search/"};
+
+struct ApiRouteParameters {
+    std::string from;
+    std::string to;
+    uint32_t limit;
+    std::string transport_type;
+    std::string date;
+    uint32_t max_transfers;
+};
 
 const std::set<std::string> kAllowedTransportTypes = {
     "plane",
@@ -28,6 +37,7 @@ enum class ErrorType {
     kApiError,
     kDataError,
     kParametersError,
+    kEnvironmentError,
     kOk
 };
 
@@ -38,39 +48,20 @@ struct Error {
 
 class ApiHandler {
 public:
-    explicit ApiHandler(std::string&& apikey, std::string&& from, std::string&& to)
+    ApiHandler(std::string apikey, ApiRouteParameters parameters)
         : apikey_(std::move(apikey))
-        , from_(std::move(from))
-        , to_(std::move(to)) {}
-
-    explicit ApiHandler(const std::string& apikey, const std::string& from, const std::string& to)
-        : apikey_(apikey)
-        , from_(from)
-        , to_(to) {}
+        , parameters_(std::move(parameters)) {}
 
     std::expected<json, Error> MakeRequest();
-
-    void SetDate(std::string date);
-    void SetTransportType(std::string type);
-
-    void SetRoutesLimit(uint32_t limit);
-    void SetMaxTransfers(uint32_t max_transfers);
 
     bool ValidateParameters();
 
     const Error& GetError() const;
 
 private:
-    const std::string apikey_;
-    const std::string from_;
-    const std::string to_;
-
+    std::string apikey_;
+    ApiRouteParameters parameters_;
     Error error_;
-
-    std::string date_;
-    std::string transport_type_;
-    uint32_t routes_limit_ = 10;
-    uint32_t max_transfers_ = 1;
 
     std::optional<std::string> GetThreadPointCode(const std::string& point) const;
 };
