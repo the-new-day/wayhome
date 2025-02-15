@@ -1,14 +1,14 @@
 #pragma once
 
-#include "ApiHandler.hpp" // for Error, TODO: later remove
+#include "ApiHandler.hpp" // for Error, ErrorType
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 #include <string>
 #include <vector>
-#include <memory>
 #include <expected>
+#include <cstdint>
 
 namespace WayHome {
 

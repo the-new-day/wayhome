@@ -3,8 +3,6 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-#include <iostream> // TODO: remove
-
 namespace WayHome {
 
 bool Route::BuildFromJson(const json& segment) {
@@ -191,32 +189,7 @@ bool Route::AddTransfer(const json& transfer_obj) {
         return false;
     }
 
-    auto transfer_point_obj = transfer_obj["transfer_point"];
-
-    if (!transfer_obj.contains("transfer_from") || !transfer_obj.contains("transfer_to")) {
-        return false;
-    }
-
-    auto transfer_from_obj = transfer_obj["transfer_from"];
-
-    if (!transfer_from_obj.contains("code") 
-    || !transfer_from_obj.contains("type") 
-    || !transfer_from_obj.contains("title") 
-    || !transfer_from_obj.contains("station_type")) {
-        return false;
-    }
-
-    auto transfer_to_obj = transfer_obj["transfer_to"];
-
-    if (!transfer_to_obj.contains("code") 
-    || !transfer_to_obj.contains("type") 
-    || !transfer_to_obj.contains("title") 
-    || !transfer_to_obj.contains("station_type") 
-    || !transfer_to_obj.contains("transport_type")) {
-        return false;
-    }
-
-    auto transfer_point_parse = ParseRoutePoint(transfer_point_obj);
+    auto transfer_point_parse = ParseRoutePoint(transfer_obj["transfer_point"]);
 
     if (!transfer_point_parse.has_value()) {
         return false;
@@ -224,23 +197,52 @@ bool Route::AddTransfer(const json& transfer_obj) {
 
     Transfer transfer;
 
+    if (transfer_obj.contains("transfer_from") && transfer_obj.contains("transfer_to")
+    && !transfer_obj["transfer_from"].is_null() && !transfer_obj["transfer_to"].is_null()) {
+        auto transfer_from_obj = transfer_obj["transfer_from"];
+
+        if (!transfer_from_obj.contains("code") 
+        || !transfer_from_obj.contains("type") 
+        || !transfer_from_obj.contains("title") 
+        || !transfer_from_obj.contains("station_type")) {
+            return false;
+        }
+
+        auto transfer_to_obj = transfer_obj["transfer_to"];
+
+        if (!transfer_to_obj.contains("code") 
+        || !transfer_to_obj.contains("type") 
+        || !transfer_to_obj.contains("title") 
+        || !transfer_to_obj.contains("station_type") 
+        || !transfer_to_obj.contains("transport_type")) {
+            return false;
+        }
+
+        transfer.next_transport_type = transfer_to_obj["transport_type"];
+
+        transfer.station1 = {
+            transfer_from_obj["code"],
+            transfer_from_obj["type"],
+            transfer_from_obj["title"],
+            transfer_from_obj["station_type"]
+        };
+
+        transfer.station2 = {
+            transfer_to_obj["code"],
+            transfer_to_obj["type"],
+            transfer_to_obj["title"],
+            transfer_to_obj["station_type"]
+        };
+    } else {
+        transfer.next_transport_type = transfer_obj["transfer_point"].contains("transport_type") 
+            ? transfer_obj["transfer_point"]["transport_type"] : "";
+
+        transfer.station1 = transfer_point_parse.value();
+        transfer.station2 = transfer_point_parse.value();
+    }
+
     transfer.duration = transfer_obj["duration"];
-    transfer.next_transport_type = transfer_to_obj["transport_type"];
     transfer.transfer_point = transfer_point_parse.value();
-
-    transfer.station1 = {
-        transfer_from_obj["code"],
-        transfer_from_obj["type"],
-        transfer_from_obj["title"],
-        transfer_from_obj["station_type"]
-    };
-
-    transfer.station2 = {
-        transfer_to_obj["code"],
-        transfer_to_obj["type"],
-        transfer_to_obj["title"],
-        transfer_to_obj["station_type"]
-    };
 
     transfers_.push_back(std::move(transfer));
     return true;

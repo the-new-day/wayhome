@@ -1,7 +1,5 @@
 #include "RoutesHandler.hpp"
 
-#include <iostream> // TODO: remove
-
 namespace WayHome {
 
 bool RoutesHandler::BuildFromJson(const json& response_obj) {
@@ -29,12 +27,12 @@ bool RoutesHandler::BuildFromJson(const json& response_obj) {
         return false;
     }
 
-    routes_.reserve(response_obj["segments"].size());
-
     auto segments_obj = response_obj["segments"];
 
-    for (auto it = segments_obj.begin(); it != segments_obj.end(); ++it) {
-        if (!AddRoute(*it)) {
+    routes_.reserve(segments_obj.size());
+
+    for (const auto& segment : segments_obj) {
+        if (!AddRoute(segment)) {
             return false;
         }
     }
@@ -70,7 +68,7 @@ const RoutePoint& RoutesHandler::GetEndPoint() const {
     return end_point_;
 }
 
-void RoutesHandler::DumpRoutesToJson(std::ostream& stream) const {
+void RoutesHandler::DumpRoutesToJson(std::ostream& stream, uint32_t max_transfers) const {
     json obj;
     obj["from"] = {
         {"code", start_point_.code},
@@ -143,7 +141,7 @@ void RoutesHandler::DumpRoutesToJson(std::ostream& stream) const {
 
             route_obj["threads"].push_back(std::move(thread_obj));
 
-            if (k < transfers.size()) {
+            if (k < transfers.size() && transfers.size() <= max_transfers) {
                 json thread_obj;
                 thread_obj["is_transfer"] = true;
 
@@ -155,6 +153,13 @@ void RoutesHandler::DumpRoutesToJson(std::ostream& stream) const {
                 };
 
                 thread_obj["to"] = {
+                    {"code", transfers[k].station2.code},
+                    {"title", transfers[k].station2.title},
+                    {"type", transfers[k].station2.type},
+                    {"station_type", transfers[k].station2.station_type}
+                };
+
+                thread_obj["transfer_point"] = {
                     {"code", transfers[k].station2.code},
                     {"title", transfers[k].station2.title},
                     {"type", transfers[k].station2.type},

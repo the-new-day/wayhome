@@ -5,7 +5,6 @@ using json = nlohmann::json;
 
 #include <string>
 #include <set>
-#include <utility>
 #include <cstdint>
 #include <expected>
 #include <optional>
@@ -20,7 +19,8 @@ const std::set<std::string> kAllowedTransportTypes = {
     "suburban",
     "bus",
     "water",
-    "helicopter"
+    "helicopter",
+    "" // all types
 };
 
 enum class ErrorType {

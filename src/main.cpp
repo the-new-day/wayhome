@@ -1,22 +1,13 @@
-#include <iostream>
-#include <vector>
-#include <argparser/ArgParser.hpp>
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
-
 #include "ApiHandler.hpp"
 #include "RoutesHandler.hpp"
 
+#include <argparser/ArgParser.hpp>
+
+#include <iostream>
+#include <vector>
 #include <fstream>
 
 int main(int argc, char** argv) {
-    //setlocale(LC_ALL, "Russian");
-
-    // std::ofstream f("test.txt");
-    // f << "привет";
-
-    // return 0;
-    
     ArgumentParser::ArgParser argparser{"WayHome", "A util for finding routes from city A to city B. "
         "Uses Yandex Schedules API (http://rasp.yandex.ru/)"};
 
@@ -35,6 +26,9 @@ int main(int argc, char** argv) {
     argparser.AddArgument<std::string>("transport", "Transport type")
         .Default("")
         .SetDefaultValueString("all");
+
+    argparser.AddArgument<std::string>("file", "Name of the file routes will be stored to")
+        .Default("wayhome_routes.json");
         
     argparser.AddHelp("help", "Show help and exit");
 
@@ -99,53 +93,13 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    std::ofstream f("test.json");
+    std::ofstream f(*argparser.GetValue<std::string>("file"));
 
-    routes_handler.DumpRoutesToJson(f);
-    return 0;
-
-    std::cout << "ROUTES (" << routes_handler.GetRoutes().size() << ")\n";
-
-    uint32_t transfers_limit = *argparser.GetValue<uint32_t>("limit");
-
-    for (const WayHome::Route& route : routes_handler.GetRoutes()) {
-        const WayHome::RoutePoint& start_point = route.GetStartPoint();
-        const WayHome::RoutePoint& end_point = route.GetEndPoint();
-
-        f << start_point.title << " - ";
-
-        const std::vector<WayHome::Transfer>& transfers = route.GetTransfers();
-
-        if (route.GetTransfersAmount() <= transfers_limit) {
-            for (const WayHome::Transfer& transfer : transfers) {
-                f << "(" << transfer.transfer_point.title << ": "
-                    << transfer.station1.title;
-
-                if (transfer.station2.code != transfer.station1.code) {
-                    f << " - " << transfer.station2.title;
-                }
-
-                f << " - " << transfer.duration << " seconds transfer)";
-                f << " - ";
-            }
-        }
-
-        f << end_point.title;
-
-        if (transfers.size() != 0) {
-            f << " (" << transfers.size() << " transfer";
-            if (transfers.size() != 1) {
-                f << 's';
-            }
-
-            f << ')';
-        }
-        
-        f << '\n';
-
-        std::cout << start_point.title << " - " << end_point.title << std::endl;
-        std::cout << '\t' << route.GetDepartureTime() << " - " << route.GetArrivalTime() << std::endl;
+    if (!f.good()) {
+        std::cerr << "An error occured: unable to open the file" << std::endl;
+        return EXIT_FAILURE;
     }
 
+    routes_handler.DumpRoutesToJson(f, *argparser.GetValue<uint32_t>("transfers"));
     return EXIT_SUCCESS;
 }
