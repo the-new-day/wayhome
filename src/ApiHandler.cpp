@@ -37,7 +37,11 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
         return std::unexpected{error_};
     }
 
-    return json::parse(r.text);
+    try {
+        return json::parse(r.text);
+    } catch (const json::exception& e) {
+        return std::unexpected{Error{e.what(), ErrorType::kDataError}};
+    }
 }
 
 bool ApiHandler::ValidateParameters() {

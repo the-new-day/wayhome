@@ -4,12 +4,31 @@
 using json = nlohmann::json;
 
 #include <fstream>
+#include <format>
+#include <filesystem>
 
 #include <iostream>
 
 namespace WayHome {
 
 WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters) {
+    if (!std::filesystem::exists(kSettingsFilename)) {
+        json empty_obj;
+        empty_obj["apikey"] = "";
+
+        std::ofstream f(kSettingsFilename);
+
+        if (!f.good()) {
+            error_ = {"Unable to open " + kSettingsFilename, ErrorType::kEnvironmentError};
+        } else if (!(f << empty_obj)) {
+            error_ = {"Unable to create or write to " + kSettingsFilename, ErrorType::kEnvironmentError};
+        } else {
+            error_ = {"Apikey wasn't set in " + kSettingsFilename, ErrorType::kParametersError};
+        }
+
+        return;
+    }
+
     std::ifstream f(kSettingsFilename);
 
     if (!f.good()) {
@@ -35,19 +54,17 @@ void WayHome::CalculateRoutes() {
         return;
     }
 
-    // TODO: cache lookup
+    std::string cache_filename = GetCacheFilename();
 
-    std::expected<json, Error> request_result = api_->MakeRequest();
+    if (cache_.IsCacheExpired(cache_filename)) {
+        std::cout << "Cache is expired: " + cache_filename << std::endl;
+    }
 
-    if (!request_result.has_value()) {
-        error_ = api_->GetError();
+    if (!cache_.IsCacheExpired(cache_filename) && LoadRoutesFromCache(cache_filename)) {
         return;
     }
 
-    routes_.BuildFromJson(request_result.value());
-    if (routes_.HasError()) {
-        error_ = routes_.GetError();
-    }
+    UpdateRoutesWithAPI();
 }
 
 void WayHome::DumpRoutesToJson(const std::string& filename) {
@@ -58,7 +75,7 @@ void WayHome::DumpRoutesToJson(const std::string& filename) {
     std::ofstream file(filename);
 
     if (!file.good()) {
-        error_ = {"Unable to open the file: " + filename, ErrorType::kEnvironmentError};
+        error_ = {"Unable to open the file to dump routes: " + filename, ErrorType::kEnvironmentError};
         return;
     }
 
@@ -66,6 +83,55 @@ void WayHome::DumpRoutesToJson(const std::string& filename) {
     if (routes_.HasError()) {
         error_ = routes_.GetError();
     }
+}
+
+std::string WayHome::GetCacheFilename() const {
+    return std::format(
+        "{}_{}_{}_{}_{}transfers.json",
+        parameters_.from,
+        parameters_.to,
+        parameters_.date,
+        parameters_.transport_type,
+        std::to_string(parameters_.max_transfers)
+    );
+}
+
+void WayHome::UpdateRoutesWithAPI() {
+    std::expected<json, Error> request_result = api_->MakeRequest();
+    std::cout << "Made a call to API" << std::endl;
+
+    if (!request_result.has_value()) {
+        error_ = api_->GetError();
+        return;
+    }
+
+    routes_.BuildFromJson(request_result.value());
+    if (routes_.HasError()) {
+        error_ = routes_.GetError();
+        return;
+    }
+    
+    if (!CacheHandler::UpdateCache(request_result.value(), GetCacheFilename())) {
+        error_ = {"Unable to update cache", ErrorType::kEnvironmentError};
+    }
+}
+
+bool WayHome::LoadRoutesFromCache(const std::string& filename) {
+    json read_to;
+    bool is_reading_successful = CacheHandler::LoadCache(read_to, filename);
+
+    if (is_reading_successful) {
+        routes_.BuildFromJson(read_to);
+
+        if (routes_.HasError()) {
+            error_ = routes_.GetError();
+            return false;
+        }
+    } else {
+        error_ = {"Unable to load cache", ErrorType::kDataError};
+    }
+
+    return is_reading_successful;
 }
 
 const std::vector<Route>& WayHome::GetRoutes() const {

@@ -34,10 +34,11 @@ int main(int argc, char** argv) {
         .StoreValue(params.transport_type)
         .SetDefaultValueString("all");
 
-    argparser.AddArgument<std::string>("file", "Name of the file routes will be stored to")
+    argparser.AddArgument<std::string>("file", "Name of the JSON file routes will be stored to")
         .Default(WayHome::kResultFilename);
 
-    argparser.AddFlag("reload-cache", "Force to make a new call to API even if suitable routes are cached");
+    argparser.AddFlag("update-cache", "Force to make a new call to API even if suitable routes are cached");
+    argparser.AddFlag("clear-cache", "Clear all cache");
         
     argparser.AddHelp("help", "Show help and exit");
 

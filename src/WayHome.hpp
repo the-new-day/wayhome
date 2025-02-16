@@ -31,6 +31,8 @@ public:
     const Error& GetError() const;
     bool HasError() const;
 
+    void UpdateRoutesWithAPI();
+
 private:
     RoutesHandler routes_;
     std::unique_ptr<ApiHandler> api_;
@@ -39,7 +41,10 @@ private:
     ApiRouteParameters parameters_;
 
     Error error_;
+
+    std::string GetCacheFilename() const;
+
+    bool LoadRoutesFromCache(const std::string& filename);
 };
     
 } // namespace WayHome
-
