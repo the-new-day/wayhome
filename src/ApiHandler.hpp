@@ -61,8 +61,6 @@ private:
     std::string apikey_;
     ApiRouteParameters parameters_;
     Error error_;
-
-    std::optional<std::string> GetThreadPointCode(const std::string& point) const;
 };
     
 } // namespace WayHome

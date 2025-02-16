@@ -16,8 +16,8 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
         cpr::Url{kApiUrl},
         cpr::Parameters{
             {"apikey", apikey_},
-            {"from", GetThreadPointCode(parameters_.from).value()},
-            {"to", GetThreadPointCode(parameters_.to).value()},
+            {"from", parameters_.from},
+            {"to", parameters_.to},
             {"transfers", (parameters_.max_transfers == 0 ? "false" : "true")},
             {"transport_types", parameters_.transport_type},
             {"date", parameters_.date},
@@ -44,6 +44,11 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
 }
 
 bool ApiHandler::ValidateParameters() {
+    if (parameters_.from == parameters_.to) {
+        error_ = {"Start and end point must be different", ErrorType::kParametersError};
+        return false;
+    }
+
     if (!kAllowedTransportTypes.contains(parameters_.transport_type)) {
         error_ = {"Invalid transport type", ErrorType::kParametersError};
         return false;
@@ -76,10 +81,6 @@ bool ApiHandler::ValidateParameters() {
     }
 
     return true;
-}
-
-std::optional<std::string> ApiHandler::GetThreadPointCode(const std::string& point) const {
-    return point; // TODO:
 }
 
 const Error& ApiHandler::GetError() const {
