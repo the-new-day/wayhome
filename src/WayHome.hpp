@@ -38,7 +38,6 @@ public:
 private:
     RoutesHandler routes_;
     std::unique_ptr<ApiHandler> api_;
-    CacheHandler cache_;
 
     ApiRouteParameters parameters_;
 

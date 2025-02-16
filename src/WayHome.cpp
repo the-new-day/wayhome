@@ -58,7 +58,7 @@ void WayHome::CalculateRoutes() {
 
     std::string cache_filename = GetCacheFilename();
 
-    if (!cache_.IsCacheExpired(cache_filename) && LoadRoutesFromCache(cache_filename)) {
+    if (!CacheHandler::IsCacheExpired(cache_filename) && LoadRoutesFromCache(cache_filename)) {
         return;
     }
 
