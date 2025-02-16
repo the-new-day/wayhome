@@ -73,13 +73,24 @@ int main(int argc, char** argv) {
     }
 
     WayHome::WayHome wayhome{params};
-    wayhome.CalculateRoutes();
+
+    if (*argparser.GetValue<bool>("clear-cache")) {
+        wayhome.ClearAllCache();
+    }
+
+    if (*argparser.GetValue<bool>("update-cache")) {
+        wayhome.UpdateRoutesWithAPI();
+    } else {
+        wayhome.CalculateRoutes();
+    }
+
     wayhome.DumpRoutesToJson(*argparser.GetValue<std::string>("file"));
 
     if (wayhome.HasError()) {
-        std::cerr << "An error occured: " << wayhome.GetError().message << std::endl;
+        std::cerr << wayhome.GetError().message << std::endl;
         return EXIT_FAILURE;
     }
     
+    std::cout << "Routes have successfully been saved to " + *argparser.GetValue<std::string>("file") << std::endl;
     return EXIT_SUCCESS;
 }

@@ -33,6 +33,8 @@ public:
 
     void UpdateRoutesWithAPI();
 
+    void ClearAllCache() const;
+
 private:
     RoutesHandler routes_;
     std::unique_ptr<ApiHandler> api_;

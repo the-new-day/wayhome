@@ -55,4 +55,10 @@ bool CacheHandler::LoadCache(json& to, const std::string& filename) {
     return true;
 }
 
+bool CacheHandler::ClearAllCache() {
+    std::error_code ec;
+    std::filesystem::remove_all(kCacheDir, ec);
+    return static_cast<bool>(ec);
+}
+
 } // namespace WayHome

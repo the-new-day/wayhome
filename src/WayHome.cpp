@@ -38,7 +38,7 @@ WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters)
 
     json settings_obj = json::parse(f, nullptr, false);
 
-    if (!settings_obj.contains("apikey")) {
+    if (!settings_obj.contains("apikey") || settings_obj["apikey"] == "") {
         error_ = {"No apikey was found in " + kSettingsFilename, ErrorType::kEnvironmentError};
         return;
     } else if (!settings_obj["apikey"].is_string()) {
@@ -114,6 +114,10 @@ void WayHome::UpdateRoutesWithAPI() {
     if (!CacheHandler::UpdateCache(request_result.value(), GetCacheFilename())) {
         error_ = {"Unable to update cache", ErrorType::kEnvironmentError};
     }
+}
+
+void WayHome::ClearAllCache() const {
+    CacheHandler::ClearAllCache();
 }
 
 bool WayHome::LoadRoutesFromCache(const std::string& filename) {
