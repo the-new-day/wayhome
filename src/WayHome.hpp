@@ -12,6 +12,9 @@ namespace WayHome {
 const std::string kSettingsFilename{"wayhome_settings.json"};
 const std::string kResultFilename{"wayhome_routes.json"};
 
+const std::string kCacheDir{"wayhome_cache"};
+const uint32_t kCacheSecondsTTL = 7 * 24 * 60 * 60;
+
 class WayHome {
 public:
     WayHome(const std::string& apikey, const ApiRouteParameters& parameters) 
@@ -38,6 +41,7 @@ public:
 private:
     RoutesHandler routes_;
     std::unique_ptr<ApiHandler> api_;
+    CacheHandler cache_{kCacheDir, kCacheSecondsTTL};
 
     ApiRouteParameters parameters_;
 

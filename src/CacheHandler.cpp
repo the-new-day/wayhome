@@ -8,7 +8,7 @@ namespace WayHome {
 
 bool CacheHandler::IsCacheExpired(const std::string& filename) {
     std::error_code ec;
-    auto file_time = std::filesystem::last_write_time(kCacheDir + '/' + filename, ec);
+    auto file_time = std::filesystem::last_write_time(cache_dir_ + '/' + filename, ec);
 
     if (ec) {
         return true;
@@ -17,14 +17,14 @@ bool CacheHandler::IsCacheExpired(const std::string& filename) {
     auto now = std::chrono::system_clock::now();
     auto system_file_time = now - (std::filesystem::file_time_type::clock::now() - file_time);
     
-    return now - system_file_time >= std::chrono::hours(kCacheHoursTTL);
+    return now - system_file_time >= std::chrono::seconds(ttl_seconds_);
 }
 
 bool CacheHandler::UpdateCache(const json& obj, const std::string& filename) {
     std::error_code ec;
-    std::filesystem::create_directory(kCacheDir, ec);
+    std::filesystem::create_directory(cache_dir_, ec);
 
-    std::ofstream file(kCacheDir + '/' + filename);
+    std::ofstream file(cache_dir_ + '/' + filename);
 
     if (ec || !file.good()) {
         return false;
@@ -40,7 +40,7 @@ bool CacheHandler::UpdateCache(const json& obj, const std::string& filename) {
 }
 
 bool CacheHandler::LoadCache(json& to, const std::string& filename) {
-    std::ifstream file(kCacheDir + '/' + filename);
+    std::ifstream file(cache_dir_ + '/' + filename);
 
     if (!file.good()) {
         return false;
@@ -57,16 +57,16 @@ bool CacheHandler::LoadCache(json& to, const std::string& filename) {
 
 bool CacheHandler::ClearAllCache() {
     std::error_code ec;
-    std::filesystem::remove_all(kCacheDir, ec);
+    std::filesystem::remove_all(cache_dir_, ec);
     return !ec;
 }
 
 bool CacheHandler::ClearExpiredCache() {
-    if (!std::filesystem::exists(kCacheDir)) {
+    if (!std::filesystem::exists(cache_dir_)) {
         return true;
     }
 
-    std::filesystem::path dir{kCacheDir};
+    std::filesystem::path dir{cache_dir_};
 
     for (const auto& file : std::filesystem::directory_iterator{dir}) {
         if (!IsCacheExpired(file.path().filename().string())) {

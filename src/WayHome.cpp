@@ -46,7 +46,7 @@ WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters)
 
     api_ = std::make_unique<ApiHandler>(settings_obj["apikey"], parameters);
 
-    if (!CacheHandler::ClearExpiredCache()) {
+    if (!cache_.ClearExpiredCache()) {
         error_ = {"Unable to clear expired cache", ErrorType::kEnvironmentError};
     }
 }
@@ -58,7 +58,7 @@ void WayHome::CalculateRoutes() {
 
     std::string cache_filename = GetCacheFilename();
 
-    if (!CacheHandler::IsCacheExpired(cache_filename) && LoadRoutesFromCache(cache_filename)) {
+    if (!cache_.IsCacheExpired(cache_filename) && LoadRoutesFromCache(cache_filename)) {
         return;
     }
 
@@ -108,20 +108,20 @@ void WayHome::UpdateRoutesWithAPI() {
         return;
     }
     
-    if (!CacheHandler::UpdateCache(request_result.value(), GetCacheFilename())) {
+    if (!cache_.UpdateCache(request_result.value(), GetCacheFilename())) {
         error_ = {"Unable to update cache", ErrorType::kEnvironmentError};
     }
 }
 
 void WayHome::ClearAllCache() {
-    if (!CacheHandler::ClearAllCache()) {
+    if (!cache_.ClearAllCache()) {
         error_ = {"Unable to clear all cache", ErrorType::kEnvironmentError};
     }
 }
 
 bool WayHome::LoadRoutesFromCache(const std::string& filename) {
     json read_to;
-    bool is_reading_successful = CacheHandler::LoadCache(read_to, filename);
+    bool is_reading_successful = cache_.LoadCache(read_to, filename);
 
     if (is_reading_successful) {
         routes_.BuildFromJson(read_to);
