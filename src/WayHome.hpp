@@ -33,7 +33,7 @@ public:
 
     void UpdateRoutesWithAPI();
 
-    void ClearAllCache() const;
+    void ClearAllCache();
 
 private:
     RoutesHandler routes_;

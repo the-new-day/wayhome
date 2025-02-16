@@ -7,8 +7,6 @@ using json = nlohmann::json;
 #include <format>
 #include <filesystem>
 
-#include <iostream>
-
 namespace WayHome {
 
 WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters) {
@@ -20,7 +18,7 @@ WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters)
 
         if (!f.good()) {
             error_ = {"Unable to open " + kSettingsFilename, ErrorType::kEnvironmentError};
-        } else if (!(f << empty_obj)) {
+        } else if (!(f << std::setw(4) << empty_obj)) {
             error_ = {"Unable to create or write to " + kSettingsFilename, ErrorType::kEnvironmentError};
         } else {
             error_ = {"Apikey wasn't set in " + kSettingsFilename, ErrorType::kParametersError};
@@ -47,6 +45,10 @@ WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters)
     }
 
     api_ = std::make_unique<ApiHandler>(settings_obj["apikey"], parameters);
+
+    if (!CacheHandler::ClearExpiredCache()) {
+        error_ = {"Unable to clear expired cache", ErrorType::kEnvironmentError};
+    }
 }
 
 void WayHome::CalculateRoutes() {
@@ -55,10 +57,6 @@ void WayHome::CalculateRoutes() {
     }
 
     std::string cache_filename = GetCacheFilename();
-
-    if (cache_.IsCacheExpired(cache_filename)) {
-        std::cout << "Cache is expired: " + cache_filename << std::endl;
-    }
 
     if (!cache_.IsCacheExpired(cache_filename) && LoadRoutesFromCache(cache_filename)) {
         return;
@@ -98,7 +96,6 @@ std::string WayHome::GetCacheFilename() const {
 
 void WayHome::UpdateRoutesWithAPI() {
     std::expected<json, Error> request_result = api_->MakeRequest();
-    std::cout << "Made a call to API" << std::endl;
 
     if (!request_result.has_value()) {
         error_ = api_->GetError();
@@ -116,8 +113,10 @@ void WayHome::UpdateRoutesWithAPI() {
     }
 }
 
-void WayHome::ClearAllCache() const {
-    CacheHandler::ClearAllCache();
+void WayHome::ClearAllCache() {
+    if (!CacheHandler::ClearAllCache()) {
+        error_ = {"Unable to clear all cache", ErrorType::kEnvironmentError};
+    }
 }
 
 bool WayHome::LoadRoutesFromCache(const std::string& filename) {

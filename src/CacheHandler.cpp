@@ -58,7 +58,30 @@ bool CacheHandler::LoadCache(json& to, const std::string& filename) {
 bool CacheHandler::ClearAllCache() {
     std::error_code ec;
     std::filesystem::remove_all(kCacheDir, ec);
-    return static_cast<bool>(ec);
+    return !ec;
+}
+
+bool CacheHandler::ClearExpiredCache() {
+    if (!std::filesystem::exists(kCacheDir)) {
+        return true;
+    }
+
+    std::filesystem::path dir{kCacheDir};
+
+    for (const auto& file : std::filesystem::directory_iterator{dir}) {
+        if (!IsCacheExpired(file.path().filename().string())) {
+            continue;
+        }
+
+        std::error_code ec;
+        std::filesystem::remove(file, ec);
+
+        if (ec) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 } // namespace WayHome

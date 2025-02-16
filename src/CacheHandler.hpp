@@ -16,6 +16,7 @@ public:
     static bool UpdateCache(const json& obj, const std::string& filename);
     static bool LoadCache(json& to, const std::string& filename);
     static bool ClearAllCache();
+    static bool ClearExpiredCache();
 };
     
 } // namespace WayHome

@@ -18,7 +18,6 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
             {"apikey", apikey_},
             {"from", GetThreadPointCode(parameters_.from).value()},
             {"to", GetThreadPointCode(parameters_.to).value()},
-            {"limit", std::to_string(parameters_.limit)},
             {"transfers", (parameters_.max_transfers == 0 ? "false" : "true")},
             {"transport_types", parameters_.transport_type},
             {"date", parameters_.date},

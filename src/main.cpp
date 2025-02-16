@@ -21,10 +21,6 @@ int main(int argc, char** argv) {
     argparser.AddArgument<std::string>("date", "Date of departure in \"YYYY-MM-DD\" format")
         .StoreValue(params.date);
 
-    argparser.AddArgument<uint32_t>("limit", "Maximum number of routes in the response")
-        .Default(10)
-        .StoreValue(params.limit);
-
     argparser.AddArgument<uint32_t>("transfers", "Maximum number of transfers")
         .Default(1)
         .StoreValue(params.max_transfers);

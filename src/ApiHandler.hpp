@@ -16,7 +16,6 @@ const std::string kApiUrl{"https://api.rasp.yandex.net/v3.0/search/"};
 struct ApiRouteParameters {
     std::string from;
     std::string to;
-    uint32_t limit;
     std::string transport_type;
     std::string date;
     uint32_t max_transfers;
