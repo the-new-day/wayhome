@@ -1,32 +1,39 @@
 #include "WayHome.hpp"
 
+#include <argparser/ArgParser.hpp>
+
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 #include <fstream>
 #include <format>
 #include <filesystem>
+#include <iostream>
 
 namespace WayHome {
 
 WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters) {
     if (!std::filesystem::exists(kSettingsFilename)) {
-        json empty_obj;
-        empty_obj["apikey"] = "";
-
-        std::ofstream f(kSettingsFilename);
-
-        if (!f.good()) {
-            error_ = {"Unable to open " + kSettingsFilename, ErrorType::kEnvironmentError};
-        } else if (!(f << std::setw(4) << empty_obj)) {
-            error_ = {"Unable to create or write to " + kSettingsFilename, ErrorType::kEnvironmentError};
-        } else {
+        CreateSettingsFile();
+        if (!HasError()) {
             error_ = {"Apikey wasn't set in " + kSettingsFilename, ErrorType::kParametersError};
         }
 
         return;
     }
 
+    ReadSettings();
+
+    if (!HasError()) {
+        api_ = std::make_unique<ApiHandler>(apikey_, parameters);
+
+        if (!cache_.ClearExpiredCache()) {
+            error_ = {"Unable to clear expired cache", ErrorType::kEnvironmentError};
+        }
+    }
+}
+
+void WayHome::ReadSettings() {
     std::ifstream f(kSettingsFilename);
 
     if (!f.good()) {
@@ -38,16 +45,24 @@ WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters)
 
     if (!settings_obj.contains("apikey") || settings_obj["apikey"] == "") {
         error_ = {"No apikey was found in " + kSettingsFilename, ErrorType::kEnvironmentError};
-        return;
     } else if (!settings_obj["apikey"].is_string()) {
         error_ = {"Apikey must be a string", ErrorType::kEnvironmentError};
-        return;
     }
 
-    api_ = std::make_unique<ApiHandler>(settings_obj["apikey"], parameters);
+    apikey_ = std::move(settings_obj["apikey"]);
+}
 
-    if (!cache_.ClearExpiredCache()) {
-        error_ = {"Unable to clear expired cache", ErrorType::kEnvironmentError};
+void WayHome::CreateSettingsFile() {
+    std::ofstream f(kSettingsFilename);
+
+    json settings_obj{
+        {"apikey", ""}
+    };
+
+    if (!f.good()) {
+        error_ = {"Unable to open " + kSettingsFilename, ErrorType::kEnvironmentError};
+    } else if (!(f << std::setw(4) << settings_obj)) {
+        error_ = {"Unable to create or write to " + kSettingsFilename, ErrorType::kEnvironmentError};
     }
 }
 

@@ -7,6 +7,8 @@
 #include <fstream>
 
 int main(int argc, char** argv) {
+    std::setlocale(LC_ALL, "Russian");
+
     WayHome::ApiRouteParameters params;
 
     ArgumentParser::ArgParser argparser{"WayHome", "A util for finding routes from city A to city B. "
@@ -30,15 +32,17 @@ int main(int argc, char** argv) {
         .StoreValue(params.transport_type)
         .SetDefaultValueString("all");
 
-    argparser.AddArgument<std::string>("file", "Name of the JSON file routes will be stored to")
-        .Default(WayHome::kResultFilename);
+    argparser.AddArgument<std::string>("file", "Name of the JSON file where the routes will be stored rather than printed")
+        .Default("none");
 
     argparser.AddFlag("update-cache", "Force to make a new call to API even if suitable routes are cached");
-    argparser.AddFlag("clear-cache", "Clear all cache");
+    argparser.AddFlag("clear-cache", "Clear all cache before calculation");
         
     argparser.AddHelp("help", "Show help and exit");
 
-    if (!argparser.Parse(argc, argv)) {
+    argparser.Parse(argc, argv);
+
+    if (argparser.HasError()) {
         if (argc == 1) {
             std::cout << argparser.HelpDescription() << std::endl;
             return EXIT_SUCCESS;
@@ -72,6 +76,9 @@ int main(int argc, char** argv) {
 
     if (*argparser.GetValue<bool>("clear-cache")) {
         wayhome.ClearAllCache();
+        if (!wayhome.HasError()) {
+            std::cout << "Cache cleared successfully\n";
+        }
     }
 
     if (*argparser.GetValue<bool>("update-cache")) {
@@ -80,13 +87,15 @@ int main(int argc, char** argv) {
         wayhome.CalculateRoutes();
     }
 
-    wayhome.DumpRoutesToJson(*argparser.GetValue<std::string>("file"));
+    if (*argparser.GetValuesSet("file") != 0) {
+        wayhome.DumpRoutesToJson(*argparser.GetValue<std::string>("file"));
+        std::cout << "Routes have successfully been saved to " + *argparser.GetValue<std::string>("file") << std::endl;
+    }
 
     if (wayhome.HasError()) {
         std::cerr << wayhome.GetError().message << std::endl;
         return EXIT_FAILURE;
     }
-    
-    std::cout << "Routes have successfully been saved to " + *argparser.GetValue<std::string>("file") << std::endl;
+
     return EXIT_SUCCESS;
 }

@@ -10,7 +10,6 @@
 namespace WayHome {
 
 const std::string kSettingsFilename{"wayhome_settings.json"};
-const std::string kResultFilename{"wayhome_routes.json"};
 
 const std::string kCacheDir{"wayhome_cache"};
 const uint32_t kCacheSecondsTTL = 7 * 24 * 60 * 60;
@@ -45,11 +44,16 @@ private:
 
     ApiRouteParameters parameters_;
 
+    std::string apikey_;
+
     Error error_;
 
     std::string GetCacheFilename() const;
 
     bool LoadRoutesFromCache(const std::string& filename);
+
+    void ReadSettings();
+    void CreateSettingsFile();
 };
     
 } // namespace WayHome
