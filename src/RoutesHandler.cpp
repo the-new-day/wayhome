@@ -61,6 +61,46 @@ bool RoutesHandler::AddRoute(const json& segment) {
     return true;
 }
 
+void RoutesHandler::DumpRoutesPretty(std::ostream& stream, uint32_t max_transfers) const {
+    stream << "Found " << routes_.size() << " routes from " << start_point_.title 
+        << " (" << start_point_.code << ") to "
+        << end_point_.title 
+        << " (" << end_point_.code << "):\n\n";
+
+    for (const Route& route : routes_) {
+        if (route.GetTransfersAmount() > max_transfers) {
+            continue;
+        }
+
+        uint32_t hours = route.GetDuration() / (60 * 60);
+        uint32_t minutes = (route.GetDuration() - hours * 60 * 60) / 60;
+        stream << "Duration: ";
+
+        if (hours > 0) stream << hours << " hours ";
+        if (hours > 0) stream << minutes << " minutes ";
+        stream << "\n";
+
+        stream << "Departure: " << route.GetDepartureTime() << "\n";
+        stream << "Arrival: " << route.GetArrivalTime() << "\n";
+
+        stream << "Threads: ";
+
+        stream << route.GetStartPoint().title << " (" << route.GetStartPoint().code << ") - ";
+
+        for (const Transfer& transfer : route.GetTransfers()) {
+            stream << transfer.station1.title << " (" << transfer.transfer_point.title << ") - ";
+
+            if (transfer.station2.code != transfer.station1.code) {
+                stream << "(station change) - " << transfer.station2.title << " - ";
+            }
+        }
+
+        stream << route.GetEndPoint().title << " (" << route.GetEndPoint().code << ")" << "\n";
+
+        stream << "\n\n";
+    }
+}
+
 void RoutesHandler::DumpRoutesToJson(std::ostream& stream, uint32_t max_transfers) const {
     json obj;
     obj["from"] = {

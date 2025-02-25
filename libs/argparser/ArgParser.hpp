@@ -99,7 +99,7 @@ private:
     ParsingError error_;
 
     bool need_help_ = false;
-    std::string_view help_argument_name_;
+    std::string help_argument_name_;
 
     void RefreshParser();
 

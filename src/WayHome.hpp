@@ -6,6 +6,7 @@
 
 #include <string>
 #include <memory>
+#include <ostream>
 
 namespace WayHome {
 
@@ -23,7 +24,10 @@ public:
     WayHome(const ApiRouteParameters& parameters);
 
     void CalculateRoutes();
+    void DumpRoutesToJson(std::ostream& stream);
     void DumpRoutesToJson(const std::string& filename);
+
+    void DumpRoutesPretty(std::ostream& stream);
 
     const std::vector<Route>& GetRoutes() const;
 

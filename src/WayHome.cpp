@@ -81,18 +81,33 @@ void WayHome::CalculateRoutes() {
 }
 
 void WayHome::DumpRoutesToJson(const std::string& filename) {
-    if (HasError()) {
-        return;
-    }
-
-    std::ofstream file(filename);
+    std::ofstream file{filename};
 
     if (!file.good()) {
         error_ = {"Unable to open the file to dump routes: " + filename, ErrorType::kEnvironmentError};
         return;
     }
 
-    routes_.DumpRoutesToJson(file, parameters_.max_transfers);
+    DumpRoutesToJson(file);
+}
+
+void WayHome::DumpRoutesPretty(std::ostream& stream) {
+    if (HasError()) {
+        return;
+    }
+
+    routes_.DumpRoutesPretty(stream, parameters_.max_transfers);
+    if (routes_.HasError()) {
+        error_ = routes_.GetError();
+    }
+}
+
+void WayHome::DumpRoutesToJson(std::ostream& stream) {
+    if (HasError()) {
+        return;
+    }
+
+    routes_.DumpRoutesToJson(stream, parameters_.max_transfers);
     if (routes_.HasError()) {
         error_ = routes_.GetError();
     }

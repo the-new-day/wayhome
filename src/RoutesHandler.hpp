@@ -20,6 +20,7 @@ public:
     const RoutePoint& GetEndPoint() const;
 
     void DumpRoutesToJson(std::ostream& stream, uint32_t max_transfers) const;
+    void DumpRoutesPretty(std::ostream& stream, uint32_t max_transfers) const;
     
     void Clear();
 
