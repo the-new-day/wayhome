@@ -1,13 +1,19 @@
 #include "ApiHandler.hpp"
 
-#include <cpr/cpr.h>
-
 #include <string_view>
 #include <algorithm>
 
 namespace WayHome {
 
-std::expected<json, Error> ApiHandler::MakeRequest() {
+void ApiHandler::SetApikey(std::string apikey) {
+    apikey_ = std::move(apikey);
+}
+
+void ApiHandler::SetParameters(ApiRouteParameters parameters) {
+    parameters_ = std::move(parameters);
+}
+
+std::expected<json, Error> ApiHandler::MakeRoutesRequest() const {
     if (!ValidateParameters()) {
         return std::unexpected{Error{"Invalid parameters", ErrorType::kParametersError}};
     }
@@ -25,15 +31,26 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
         }
     );
 
-    if (r.status_code >= 300 && r.status_code < 400 || r.status_code >= 500) {
-        error_ = {"API error: " + r.error.message, ErrorType::kApiError};
-        return std::unexpected{error_};
-    } else if (r.status_code >= 400 && r.status_code < 500) {
-        error_ = {"Parameters error in request: " + r.url.str(), ErrorType::kParametersError};
-        return std::unexpected{error_};
-    } else if (r.status_code != 200) {
-        error_ = {"Network error", ErrorType::kNetworkError};
-        return std::unexpected{error_};
+    return ProcessRequest(r);
+}
+
+std::expected<json, Error> ApiHandler::MakeSuggestsRequest(const std::string& input) const {
+    cpr::Response r = cpr::Get(
+        cpr::Url{kSuggestsUrl},
+        cpr::Parameters{
+            {"part", input},
+            {"format", "json"}
+        }
+    );
+
+    return ProcessRequest(r);
+}
+
+std::expected<json, Error> ApiHandler::ProcessRequest(const cpr::Response& r) const {
+    ProcessRequestErrors(r);
+
+    if (HasError()) {
+        return std::unexpected{GetError()};
     }
 
     try {
@@ -43,7 +60,17 @@ std::expected<json, Error> ApiHandler::MakeRequest() {
     }
 }
 
-bool ApiHandler::ValidateParameters() {
+void ApiHandler::ProcessRequestErrors(const cpr::Response& r) const {
+    if (r.status_code >= 300 && r.status_code < 400 || r.status_code >= 500) {
+        error_ = {"API error: " + r.error.message, ErrorType::kApiError};
+    } else if (r.status_code >= 400 && r.status_code < 500) {
+        error_ = {"Parameters error in request: " + r.url.str(), ErrorType::kParametersError};
+    } else if (r.status_code != 200) {
+        error_ = {"Network error", ErrorType::kNetworkError};
+    }
+}
+
+bool ApiHandler::ValidateParameters() const {
     if (parameters_.from == parameters_.to) {
         error_ = {"Start and end point must be different", ErrorType::kParametersError};
         return false;
@@ -87,5 +114,8 @@ const Error& ApiHandler::GetError() const {
     return error_;
 }
 
-} // namespace WayHome
+bool ApiHandler::HasError() const {
+    return error_.type != ErrorType::kOk;
+}
 
+} // namespace WayHome

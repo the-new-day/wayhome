@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
@@ -8,10 +9,12 @@ using json = nlohmann::json;
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <utility>
 
 namespace WayHome {
 
 const std::string kApiUrl{"https://api.rasp.yandex.net/v3.0/search/"};
+const std::string kSuggestsUrl{"https://suggests.rasp.yandex.net/all_suggests"};
 
 struct ApiRouteParameters {
     std::string from;
@@ -51,17 +54,26 @@ public:
         : apikey_(std::move(apikey))
         , parameters_(std::move(parameters)) {}
 
-    std::expected<json, Error> MakeRequest();
+    ApiHandler() = default;
 
-    bool ValidateParameters();
+    void SetApikey(std::string apikey);
+    void SetParameters(ApiRouteParameters parameters);
+
+    std::expected<json, Error> MakeRoutesRequest() const;
+    std::expected<json, Error> MakeSuggestsRequest(const std::string& input) const;
+
+    bool ValidateParameters() const;
 
     const Error& GetError() const;
+    bool HasError() const;
 
 private:
     std::string apikey_;
     ApiRouteParameters parameters_;
-    Error error_;
+    mutable Error error_;
+
+    std::expected<json, Error> ProcessRequest(const cpr::Response& r) const;
+    void ProcessRequestErrors(const cpr::Response& r) const;
 };
     
 } // namespace WayHome
-

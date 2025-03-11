@@ -6,7 +6,7 @@
 
 namespace WayHome {
 
-bool CacheHandler::IsCacheExpired(const std::string& filename) {
+bool CacheHandler::IsCacheExpired(const std::string& filename) const {
     std::error_code ec;
     auto file_time = std::filesystem::last_write_time(cache_dir_ + '/' + filename, ec);
 
@@ -20,7 +20,7 @@ bool CacheHandler::IsCacheExpired(const std::string& filename) {
     return now - system_file_time >= std::chrono::seconds(ttl_seconds_);
 }
 
-bool CacheHandler::UpdateCache(const json& obj, const std::string& filename) {
+bool CacheHandler::UpdateCache(const json& obj, const std::string& filename) const {
     std::error_code ec;
     std::filesystem::create_directory(cache_dir_, ec);
 
@@ -39,7 +39,7 @@ bool CacheHandler::UpdateCache(const json& obj, const std::string& filename) {
     return file.good();
 }
 
-bool CacheHandler::LoadCache(json& to, const std::string& filename) {
+bool CacheHandler::LoadCache(json& to, const std::string& filename) const {
     std::ifstream file(cache_dir_ + '/' + filename);
 
     if (!file.good()) {
@@ -55,13 +55,13 @@ bool CacheHandler::LoadCache(json& to, const std::string& filename) {
     return true;
 }
 
-bool CacheHandler::ClearAllCache() {
+bool CacheHandler::ClearAllCache() const {
     std::error_code ec;
     std::filesystem::remove_all(cache_dir_, ec);
     return !ec;
 }
 
-bool CacheHandler::ClearExpiredCache() {
+bool CacheHandler::ClearExpiredCache() const {
     if (!std::filesystem::exists(cache_dir_)) {
         return true;
     }

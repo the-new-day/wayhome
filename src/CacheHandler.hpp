@@ -14,11 +14,15 @@ public:
         : cache_dir_(std::move(cache_dir))
         , ttl_seconds_(ttl_seconds) {}
 
-    bool IsCacheExpired(const std::string& filename);
-    bool UpdateCache(const json& obj, const std::string& filename);
-    bool LoadCache(json& to, const std::string& filename);
-    bool ClearAllCache();
-    bool ClearExpiredCache();
+    CacheHandler() 
+        : cache_dir_("./")
+        , ttl_seconds_(0) {};
+
+    bool IsCacheExpired(const std::string& filename) const;
+    bool UpdateCache(const json& obj, const std::string& filename) const;
+    bool LoadCache(json& to, const std::string& filename) const;
+    bool ClearAllCache() const;
+    bool ClearExpiredCache() const;
 
 private:
     std::string cache_dir_;
@@ -26,4 +30,3 @@ private:
 };
     
 } // namespace WayHome
-

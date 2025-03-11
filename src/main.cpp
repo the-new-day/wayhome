@@ -4,7 +4,6 @@
 
 #include <iostream>
 #include <vector>
-#include <locale>
 
 void SetParserAgruments(ArgumentParser::ArgParser& argparser, WayHome::ApiRouteParameters& params);
 bool HandleParserErrors(const ArgumentParser::ArgParser& argparser);

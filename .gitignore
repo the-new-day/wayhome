@@ -1,6 +1,7 @@
 .vscode/
 build/
 routes.json
+all_codes.json
 
 # Prerequisites
 *.d

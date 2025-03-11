@@ -62,7 +62,10 @@ bool RoutesHandler::AddRoute(const json& segment) {
 }
 
 void RoutesHandler::DumpRoutesPretty(std::ostream& stream, uint32_t max_transfers) const {
-    stream << "Found " << routes_.size() << " routes from " << start_point_.title 
+    uint32_t count = std::count_if(routes_.begin(), routes_.end(), 
+        [max_transfers](const Route& route) { return route.GetTransfersAmount() <= max_transfers; });
+
+    stream << "Found " << count << " routes from " << start_point_.title 
         << " (" << start_point_.code << ") to "
         << end_point_.title 
         << " (" << end_point_.code << "):\n\n";

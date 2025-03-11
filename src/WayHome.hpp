@@ -3,6 +3,7 @@
 #include "ApiHandler.hpp"
 #include "RoutesHandler.hpp"
 #include "CacheHandler.hpp"
+#include "CodeSearcher.hpp"
 
 #include <string>
 #include <memory>
@@ -17,17 +18,15 @@ const uint32_t kCacheSecondsTTL = 7 * 24 * 60 * 60;
 
 class WayHome {
 public:
-    WayHome(const std::string& apikey, const ApiRouteParameters& parameters) 
-        : api_(std::make_unique<ApiHandler>(apikey, parameters))
-        , parameters_(parameters) {}
-
+    WayHome(const std::string& apikey, const ApiRouteParameters& parameters);
     WayHome(const ApiRouteParameters& parameters);
 
     void CalculateRoutes();
-    void DumpRoutesToJson(std::ostream& stream);
-    void DumpRoutesToJson(const std::string& filename);
 
-    void DumpRoutesPretty(std::ostream& stream);
+    void DumpRoutesToJson(std::ostream& stream) const;
+    void DumpRoutesToJson(const std::string& filename) const;
+
+    void DumpRoutesPretty(std::ostream& stream) const;
 
     const std::vector<Route>& GetRoutes() const;
 
@@ -39,25 +38,28 @@ public:
 
     void UpdateRoutesWithAPI();
 
-    void ClearAllCache();
+    void ClearAllCache() const;
 
 private:
     RoutesHandler routes_;
     std::unique_ptr<ApiHandler> api_;
     CacheHandler cache_{kCacheDir, kCacheSecondsTTL};
 
+    CodeSearcher code_searcher_;
     ApiRouteParameters parameters_;
 
     std::string apikey_;
 
-    Error error_;
+    mutable Error error_;
 
     std::string GetCacheFilename() const;
 
     bool LoadRoutesFromCache(const std::string& filename);
 
     void ReadSettings();
-    void CreateSettingsFile();
+    void CreateSettingsFile() const;
+
+    bool SetCodeForEndpoints();
 };
     
 } // namespace WayHome

@@ -12,6 +12,18 @@ using json = nlohmann::json;
 
 namespace WayHome {
 
+WayHome::WayHome(const std::string& apikey, const ApiRouteParameters& parameters) : parameters_(parameters) {
+    SetCodeForEndpoints();
+
+    if (!HasError()) {
+        api_ = std::make_unique<ApiHandler>(apikey_, parameters);
+
+        if (!cache_.ClearExpiredCache()) {
+            error_ = {"Unable to clear expired cache", ErrorType::kEnvironmentError};
+        }
+    }
+}
+
 WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters) {
     if (!std::filesystem::exists(kSettingsFilename)) {
         CreateSettingsFile();
@@ -23,6 +35,7 @@ WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters)
     }
 
     ReadSettings();
+    SetCodeForEndpoints();
 
     if (!HasError()) {
         api_ = std::make_unique<ApiHandler>(apikey_, parameters);
@@ -52,7 +65,7 @@ void WayHome::ReadSettings() {
     apikey_ = std::move(settings_obj["apikey"]);
 }
 
-void WayHome::CreateSettingsFile() {
+void WayHome::CreateSettingsFile() const {
     std::ofstream f(kSettingsFilename);
 
     json settings_obj{
@@ -64,6 +77,43 @@ void WayHome::CreateSettingsFile() {
     } else if (!(f << std::setw(4) << settings_obj)) {
         error_ = {"Unable to create or write to " + kSettingsFilename, ErrorType::kEnvironmentError};
     }
+}
+
+bool WayHome::SetCodeForEndpoints() {
+    if (parameters_.from.size() < 2 || parameters_.to.size() < 2) {
+        error_ = {"Parameters 'from' and 'to' are invalid", ErrorType::kParametersError};
+        return false;
+    }
+
+    if (!parameters_.from.starts_with('c') && !parameters_.from.starts_with('s')) {
+        std::expected<std::string, Error> search_result = code_searcher_.FindCode(parameters_.from);
+
+        if (!search_result.has_value()) {
+            search_result.error().message 
+                = std::format("Could not find a code for {}; {}", parameters_.from, search_result.error().message);
+
+            error_ = search_result.error();
+            return false;
+        }
+
+        parameters_.from = search_result.value();
+    }
+
+    if (!parameters_.to.starts_with('c') && !parameters_.to.starts_with('s')) {
+        std::expected<std::string, Error> search_result = code_searcher_.FindCode(parameters_.to);
+
+        if (!search_result.has_value()) {
+            search_result.error().message 
+                = std::format("Could not find a code for {}; {}", parameters_.to, search_result.error().message);
+
+            error_ = search_result.error();
+            return false;
+        }
+
+        parameters_.to = search_result.value();
+    }
+
+    return true;
 }
 
 void WayHome::CalculateRoutes() {
@@ -80,7 +130,7 @@ void WayHome::CalculateRoutes() {
     UpdateRoutesWithAPI();
 }
 
-void WayHome::DumpRoutesToJson(const std::string& filename) {
+void WayHome::DumpRoutesToJson(const std::string& filename) const {
     std::ofstream file{filename};
 
     if (!file.good()) {
@@ -91,7 +141,7 @@ void WayHome::DumpRoutesToJson(const std::string& filename) {
     DumpRoutesToJson(file);
 }
 
-void WayHome::DumpRoutesPretty(std::ostream& stream) {
+void WayHome::DumpRoutesPretty(std::ostream& stream) const {
     if (HasError()) {
         return;
     }
@@ -102,7 +152,7 @@ void WayHome::DumpRoutesPretty(std::ostream& stream) {
     }
 }
 
-void WayHome::DumpRoutesToJson(std::ostream& stream) {
+void WayHome::DumpRoutesToJson(std::ostream& stream) const {
     if (HasError()) {
         return;
     }
@@ -125,7 +175,7 @@ std::string WayHome::GetCacheFilename() const {
 }
 
 void WayHome::UpdateRoutesWithAPI() {
-    std::expected<json, Error> request_result = api_->MakeRequest();
+    std::expected<json, Error> request_result = api_->MakeRoutesRequest();
 
     if (!request_result.has_value()) {
         error_ = api_->GetError();
@@ -143,7 +193,7 @@ void WayHome::UpdateRoutesWithAPI() {
     }
 }
 
-void WayHome::ClearAllCache() {
+void WayHome::ClearAllCache() const {
     if (!cache_.ClearAllCache()) {
         error_ = {"Unable to clear all cache", ErrorType::kEnvironmentError};
     }
