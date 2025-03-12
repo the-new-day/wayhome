@@ -3,7 +3,6 @@
 #include <argparser/ArgParser.hpp>
 
 #include <iostream>
-#include <vector>
 
 void SetParserAgruments(ArgumentParser::ArgParser& argparser, WayHome::ApiRouteParameters& params);
 bool HandleParserErrors(const ArgumentParser::ArgParser& argparser);
@@ -58,8 +57,7 @@ int main(int argc, char** argv) {
 
 void SetParserAgruments(ArgumentParser::ArgParser& argparser, WayHome::ApiRouteParameters& params) {
     argparser.AddArgument<std::string>("from", "Departure point: Yandex Schedules code")
-        .StoreValue(params.from)
-        .Default("Санкт-Петербург");
+        .StoreValue(params.from);
 
     argparser.AddArgument<std::string>("to", "Arrival point: Yandex Schedules code")
         .StoreValue(params.to);
