@@ -21,14 +21,14 @@ std::expected<json, Error> ApiHandler::MakeRoutesRequest() const {
     cpr::Response r = cpr::Get(
         cpr::Url{kApiUrl},
         cpr::Parameters{
-            {"apikey", apikey_},
             {"from", parameters_.from},
             {"to", parameters_.to},
             {"transfers", (parameters_.max_transfers == 0 ? "false" : "true")},
             {"transport_types", parameters_.transport_type},
             {"date", parameters_.date},
             {"format", "json"}
-        }
+        },
+        cpr::Header{{"Authorization", apikey_}}
     );
 
     return ProcessRequest(r);
@@ -56,7 +56,7 @@ std::expected<json, Error> ApiHandler::ProcessRequest(const cpr::Response& r) co
     try {
         return json::parse(r.text);
     } catch (const json::exception& e) {
-        return std::unexpected{Error{e.what(), ErrorType::kDataError}};
+        return std::unexpected{Error{"Json parsing error, request was: " + std::string{r.url}, ErrorType::kDataError}};
     }
 }
 

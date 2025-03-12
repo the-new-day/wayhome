@@ -58,7 +58,8 @@ int main(int argc, char** argv) {
 
 void SetParserAgruments(ArgumentParser::ArgParser& argparser, WayHome::ApiRouteParameters& params) {
     argparser.AddArgument<std::string>("from", "Departure point: Yandex Schedules code")
-        .StoreValue(params.from);
+        .StoreValue(params.from)
+        .Default("Санкт-Петербург");
 
     argparser.AddArgument<std::string>("to", "Arrival point: Yandex Schedules code")
         .StoreValue(params.to);

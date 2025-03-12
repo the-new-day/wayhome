@@ -16,7 +16,7 @@ WayHome::WayHome(const std::string& apikey, const ApiRouteParameters& parameters
     SetCodeForEndpoints();
 
     if (!HasError()) {
-        api_ = std::make_unique<ApiHandler>(apikey_, parameters);
+        api_ = std::make_unique<ApiHandler>(apikey_, parameters_);
 
         if (!cache_.ClearExpiredCache()) {
             error_ = {"Unable to clear expired cache", ErrorType::kEnvironmentError};
@@ -38,7 +38,7 @@ WayHome::WayHome(const ApiRouteParameters& parameters) : parameters_(parameters)
     SetCodeForEndpoints();
 
     if (!HasError()) {
-        api_ = std::make_unique<ApiHandler>(apikey_, parameters);
+        api_ = std::make_unique<ApiHandler>(apikey_, parameters_);
 
         if (!cache_.ClearExpiredCache()) {
             error_ = {"Unable to clear expired cache", ErrorType::kEnvironmentError};
@@ -96,6 +96,7 @@ bool WayHome::SetCodeForEndpoints() {
             return false;
         }
 
+        std::cout << "Found code for " + parameters_.from + ": " + search_result.value() << std::endl;
         parameters_.from = search_result.value();
     }
 
@@ -110,6 +111,7 @@ bool WayHome::SetCodeForEndpoints() {
             return false;
         }
 
+        std::cout << "Found code for " + parameters_.to + ": " + search_result.value() << std::endl;
         parameters_.to = search_result.value();
     }
 

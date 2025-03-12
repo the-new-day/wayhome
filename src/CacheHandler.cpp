@@ -4,6 +4,8 @@
 #include <chrono>
 #include <fstream>
 
+#include <iostream>
+
 namespace WayHome {
 
 bool CacheHandler::IsCacheExpired(const std::string& filename) const {

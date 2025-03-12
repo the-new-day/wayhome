@@ -57,7 +57,7 @@ std::expected<std::string, Error> CodeSearcher::CallApi(const std::string& input
         }
 
         if (suggestion["title"] == input) {
-            return suggestion["code"];
+            return suggestion["point_key"];
         }
     }
 
@@ -67,7 +67,7 @@ std::expected<std::string, Error> CodeSearcher::CallApi(const std::string& input
 bool CodeSearcher::SaveToCache(const std::string& name, const std::string& code) const {
     json cache_obj;
 
-    if (cache_handler.LoadCache(cache_obj, kCodesFilename)) {
+    if (!std::filesystem::exists(kCodesFilename) || cache_handler.LoadCache(cache_obj, kCodesFilename)) {
         cache_obj[name] = code;
         return cache_handler.UpdateCache(cache_obj, kCodesFilename);
     }
